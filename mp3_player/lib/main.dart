@@ -6,47 +6,109 @@ void main() {
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  _MainAppState createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  bool isDarkMode = false;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Music',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
+      home: HomeScreen(
+        isDarkMode: isDarkMode,
+        onThemeChanged: (bool value) {
+          setState(() {
+            isDarkMode = value;
+          });
+        },
       ),
-      home: const HomeScreen(), 
     );
   }
 }
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final bool isDarkMode;
+  final ValueChanged<bool> onThemeChanged;
+
+  const HomeScreen({
+    super.key,
+    required this.isDarkMode,
+    required this.onThemeChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Music'),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SongsScreen()),
-            );
-          },
-          child: const Text('Ver la lista de todas las canciones'),
-    // return const MaterialApp(
-    //   home: Scaffold(
-    //     body: Center(
-    //       child: MusicPlayerView(),
-    //     ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'Configuración') {
+                _showThemeDialog(context);
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'Configuración',
+                child: Text('Configuración'),
+              ),
+            ],
           ),
-        )
+        ],
+      ),
+      body: Column(
+        children: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SongsScreen()),
+              );
+            },
+            child: const Text('Ver la lista de todas las canciones'),
+          ),
+            ElevatedButton(
+            onPressed: () {
+              _showThemeDialog(context);
+            },
+            child: const Text('Configuración'),
+          ),
+        ] 
+      ),
+      
+    );
+  }
+
+  void _showThemeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Configuración de Tema'),
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Modo Oscuro'),
+              Switch(
+                value: isDarkMode,
+                onChanged: (bool value) {
+                  onThemeChanged(value);
+                  Navigator.of(context).pop(); // Cierra el diálogo
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

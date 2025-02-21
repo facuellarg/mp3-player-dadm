@@ -21,7 +21,7 @@ class MusicPlayerView extends StatefulWidget {
 class _MusicPlayerViewState extends State<MusicPlayerView> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
-
+  
   _MusicPlayerViewState(Object fileName);
 
   @override
@@ -32,7 +32,7 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
 
   Future<void> _initAudioPlayer() async {
     print("Init");
-    print(widget.fileName);
+    print(widget.fileName);    
     try {
       await _audioPlayer.setAudioSource(
         AudioSource.uri(
@@ -62,7 +62,7 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
   @override
   Widget build(BuildContext context) {
     print("Context");
-    print(context);
+    print(context);    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -87,7 +87,7 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
         children: [
           // Music notes animation container
           Expanded(
-            flex: 2,
+            flex: 1,
             child: Container(
               padding: const EdgeInsets.all(20),
               child: CustomPaint(
@@ -104,9 +104,9 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Song title and artist
-                const Text(
-                  'Back To Black',
-                  style: TextStyle(
+                Text(
+                  widget.fileName.toString(),
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),

@@ -1,41 +1,41 @@
 import 'dart:io';
+import 'package:mp3_player/visualization.dart';
+
 import 'songs.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 
 class MusicPlayerView extends StatefulWidget {
-  final Object fileName;
-  _MusicPlayerView(Object fileName) {
-    throw UnimplementedError();
-  }
+  final List<String> fileNames;
+  final int currentSong;
 
   const MusicPlayerView(FileSystemEntity file,
-      {Key? key, required this.fileName})
+      {Key? key, required this.fileNames, required this.currentSong})
       : super(key: key);
 
   @override
-  State<MusicPlayerView> createState() => _MusicPlayerViewState(fileName);
+  State<MusicPlayerView> createState() => _MusicPlayerViewState();
 }
 
 class _MusicPlayerViewState extends State<MusicPlayerView> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
-
-  _MusicPlayerViewState(Object fileName);
+  late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.currentSong;
+    _audioPlayer = AudioPlayer();
     _initAudioPlayer();
   }
 
   Future<void> _initAudioPlayer() async {
-    print(widget.fileName);
     try {
       await _audioPlayer.setAudioSource(
         AudioSource.uri(
-          Uri.parse(widget.fileName.toString()),
+          Uri.parse(widget.fileNames[_currentIndex]),
         ),
       );
 
@@ -46,8 +46,62 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
           });
         }
       });
+
+      // Add listener for when song completes
+      _audioPlayer.positionStream.listen((position) {
+        if (position >= (_audioPlayer.duration ?? Duration.zero)) {
+          _playNextSong();
+        }
+      });
     } catch (e) {
-      debugPrint("Error cargando el audio: $e");
+      debugPrint("Error loading audio: $e");
+    }
+  }
+
+  Future<void> _playNextSong() async {
+    if (_currentIndex < widget.fileNames.length - 1) {
+      setState(() {
+        _currentIndex++;
+      });
+      await _loadAndPlaySong();
+    }
+  }
+
+  Future<void> _playPreviousSong() async {
+    if (_currentIndex > 0) {
+      setState(() {
+        _currentIndex--;
+      });
+      await _loadAndPlaySong();
+    }
+  }
+
+  Future<void> _loadAndPlaySong() async {
+    try {
+      await _audioPlayer.dispose();
+      // Create a new instance of AudioPlayer
+      setState(() {
+        _audioPlayer = AudioPlayer();
+      });
+
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(widget.fileNames[_currentIndex]),
+        ),
+      );
+
+      // Reattach the player state listener
+      _audioPlayer.playerStateStream.listen((playerState) {
+        if (playerState.playing != _isPlaying) {
+          setState(() {
+            _isPlaying = playerState.playing;
+          });
+        }
+      });
+
+      await _audioPlayer.play();
+    } catch (e) {
+      debugPrint("Error changing song: $e");
     }
   }
 
@@ -77,25 +131,19 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
           actions: [
             IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () {},
+              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
         body: Column(
           children: [
-            // Music notes animation container
             Expanded(
               flex: 2,
               child: Container(
                 padding: const EdgeInsets.all(20),
-                child: CustomPaint(
-                  painter: MusicNotesPainter(),
-                  child: Container(),
-                ),
+                child: AudioVisualizer(audioPlayer: _audioPlayer),
               ),
             ),
-
-            // Player controls
             Expanded(
               flex: 3,
               child: Padding(
@@ -103,9 +151,8 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Song title and artist
                     Text(
-                      widget.fileName.toString().split('/').last,
+                      widget.fileNames[_currentIndex].split('/').last,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -113,15 +160,26 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const Text(
-                      'Amy Winehouse',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+                    StreamBuilder<IcyMetadata?>(
+                      stream: _audioPlayer.icyMetadataStream,
+                      builder: (context, snapshot) {
+                        final artist = snapshot.data?.info?.title
+                                ?.split(' - ')
+                                .lastOrNull ??
+                            '';
+                        return artist.isNotEmpty
+                            ? Text(
+                                artist,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : const SizedBox.shrink();
+                      },
                     ),
-
-                    // Progress bar
                     StreamBuilder<Duration>(
                       stream: _positionStream,
                       builder: (context, snapshot) {
@@ -154,15 +212,14 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                         );
                       },
                     ),
-
-                    // Player controls
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _buildControlButton(
                           Icons.skip_previous,
                           Colors.teal,
-                          onPressed: () => _audioPlayer.seekToPrevious(),
+                          onPressed:
+                              _currentIndex > 0 ? _playPreviousSong : null,
                         ),
                         const SizedBox(width: 20),
                         _buildControlButton(
@@ -181,7 +238,9 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                         _buildControlButton(
                           Icons.skip_next,
                           Colors.teal,
-                          onPressed: () => _audioPlayer.seekToNext(),
+                          onPressed: _currentIndex < widget.fileNames.length - 1
+                              ? _playNextSong
+                              : null,
                         ),
                       ],
                     ),
@@ -189,8 +248,6 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                 ),
               ),
             ),
-
-            // Bottom navigation
             Container(
               height: 60,
               padding: const EdgeInsets.only(bottom: 8),
@@ -234,7 +291,7 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
         width: isLarge ? 64 : 48,
         height: isLarge ? 64 : 48,
         decoration: BoxDecoration(
-          color: color,
+          color: onPressed == null ? Colors.grey : color,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
@@ -275,27 +332,4 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
     _audioPlayer.dispose();
     super.dispose();
   }
-}
-
-class MusicNotesPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.teal.withOpacity(0.5)
-      ..style = PaintingStyle.fill;
-
-    final Path notePath = Path()
-      ..moveTo(size.width * 0.2, size.height * 0.5)
-      ..quadraticBezierTo(
-        size.width * 0.5,
-        size.height * 0.2,
-        size.width * 0.8,
-        size.height * 0.5,
-      );
-
-    canvas.drawPath(notePath, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }

@@ -13,6 +13,7 @@ class SongsScreen extends StatefulWidget {
 
 class _SongsScreenState extends State<SongsScreen> {
   List<FileSystemEntity> allFiles = [];
+  List<String> fileNames = [];
   bool isLoading = false;
 
   @override
@@ -38,6 +39,7 @@ class _SongsScreenState extends State<SongsScreen> {
               if (file is File && file.path.endsWith('.mp3') ||
                   file.path.endsWith('.wav')) {
                 files.add(file);
+                fileNames.add(file.resolveSymbolicLinksSync());
               }
             } catch (e) {
               // Ignora carpetas inaccesibles
@@ -56,8 +58,6 @@ class _SongsScreenState extends State<SongsScreen> {
     } else {
       print("Permisos de almacenamiento denegados.");
     }
-    print("Archivos encontrados: ${allFiles.length}");
-    print(allFiles);
 
     setState(() {
       isLoading = false;
@@ -75,7 +75,8 @@ class _SongsScreenState extends State<SongsScreen> {
       MaterialPageRoute(
         builder: (context) => MusicPlayerView(
           file,
-          fileName: file.resolveSymbolicLinksSync(),
+          fileNames: fileNames,
+          currentSong: fileNames.indexOf(file.path),
         ),
       ),
     );

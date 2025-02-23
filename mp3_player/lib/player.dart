@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:mp3_player/favorites.dart';
+import 'package:mp3_player/nav_bar.dart';
 import 'package:mp3_player/visualization.dart';
 
 import 'songs.dart';
@@ -248,33 +250,9 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                 ),
               ),
             ),
-            Container(
-              height: 60,
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      backgroundColor: Colors.transparent,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const SongsScreen()),
-                      );
-                    },
-                    child: _buildNavItem(Icons.music_note, 'Music'),
-                  ),
-                  _buildNavItem(Icons.favorite_border, 'Favorite'),
-                  _buildNavItem(Icons.playlist_play, 'Playlist'),
-                ],
-              ),
-            ),
           ],
         ),
+        bottomNavigationBar: MyNavigationBar(context),
       ),
     );
   }
@@ -300,23 +278,6 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
           size: isLarge ? 32 : 24,
         ),
       ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.grey),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
-        ),
-      ],
     );
   }
 

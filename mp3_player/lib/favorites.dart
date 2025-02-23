@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class FavoritesPage extends StatelessWidget {
-  final List<Map<String, String>> favoriteSongs;
+  List<Map<String, String>> favoriteSongs;
 
   FavoritesPage({required this.favoriteSongs});
 

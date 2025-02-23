@@ -21,7 +21,7 @@ class MusicPlayerView extends StatefulWidget {
 class _MusicPlayerViewState extends State<MusicPlayerView> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
-  
+
   _MusicPlayerViewState(Object fileName);
 
   @override
@@ -31,8 +31,7 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
   }
 
   Future<void> _initAudioPlayer() async {
-    print("Init");
-    print(widget.fileName);    
+    print(widget.fileName);
     try {
       await _audioPlayer.setAudioSource(
         AudioSource.uri(
@@ -61,163 +60,164 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
 
   @override
   Widget build(BuildContext context) {
-    print("Context");
-    print(context);    
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return SafeArea(
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black),
-          onPressed: () {},
-        ),
-        title: const Text(
-          'Listening',
-          style: TextStyle(color: Colors.black),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.black),
             onPressed: () {},
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Music notes animation container
-          Expanded(
-            flex: 1,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: CustomPaint(
-                painter: MusicNotesPainter(),
-                child: Container(),
+          title: const Text(
+            'Listening',
+            style: TextStyle(color: Colors.black),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () {},
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Music notes animation container
+            Expanded(
+              flex: 2,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: CustomPaint(
+                  painter: MusicNotesPainter(),
+                  child: Container(),
+                ),
               ),
             ),
-          ),
 
-          // Player controls
-          Expanded(
-            flex: 1,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Song title and artist
-                Text(
-                  widget.fileName.toString(),
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Amy Winehouse',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Progress bar
-                StreamBuilder<Duration>(
-                  stream: _positionStream,
-                  builder: (context, snapshot) {
-                    final position = snapshot.data ?? Duration.zero;
-                    final duration = _audioPlayer.duration ?? Duration.zero;
-
-                    return Column(
-                      children: [
-                        Slider(
-                          value: position.inMilliseconds.toDouble(),
-                          max: duration.inMilliseconds.toDouble(),
-                          onChanged: (value) {
-                            _audioPlayer
-                                .seek(Duration(milliseconds: value.toInt()));
-                          },
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(_formatDuration(position)),
-                              Text(_formatDuration(duration)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Player controls
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            // Player controls
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildControlButton(
-                      Icons.skip_previous,
-                      Colors.teal,
-                      onPressed: () => _audioPlayer.seekToPrevious(),
+                    // Song title and artist
+                    Text(
+                      widget.fileName.toString().split('/').last,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 20),
-                    _buildControlButton(
-                      _isPlaying ? Icons.pause : Icons.play_arrow,
-                      Colors.teal,
-                      isLarge: true,
-                      onPressed: () {
-                        if (_isPlaying) {
-                          _audioPlayer.pause();
-                        } else {
-                          _audioPlayer.play();
-                        }
+                    const Text(
+                      'Amy Winehouse',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+
+                    // Progress bar
+                    StreamBuilder<Duration>(
+                      stream: _positionStream,
+                      builder: (context, snapshot) {
+                        final position = snapshot.data ?? Duration.zero;
+                        final duration = _audioPlayer.duration ?? Duration.zero;
+
+                        return Column(
+                          children: [
+                            Slider(
+                              value: position.inMilliseconds.toDouble(),
+                              max: duration.inMilliseconds.toDouble(),
+                              onChanged: (value) {
+                                _audioPlayer.seek(
+                                    Duration(milliseconds: value.toInt()));
+                              },
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(_formatDuration(position)),
+                                  Text(_formatDuration(duration)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
                       },
                     ),
-                    const SizedBox(width: 20),
-                    _buildControlButton(
-                      Icons.skip_next,
-                      Colors.teal,
-                      onPressed: () => _audioPlayer.seekToNext(),
+
+                    // Player controls
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildControlButton(
+                          Icons.skip_previous,
+                          Colors.teal,
+                          onPressed: () => _audioPlayer.seekToPrevious(),
+                        ),
+                        const SizedBox(width: 20),
+                        _buildControlButton(
+                          _isPlaying ? Icons.pause : Icons.play_arrow,
+                          Colors.teal,
+                          isLarge: true,
+                          onPressed: () {
+                            if (_isPlaying) {
+                              _audioPlayer.pause();
+                            } else {
+                              _audioPlayer.play();
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 20),
+                        _buildControlButton(
+                          Icons.skip_next,
+                          Colors.teal,
+                          onPressed: () => _audioPlayer.seekToNext(),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
 
-          // Bottom navigation
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // _buildNavItem(Icons.music_note, 'Music'),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const SongsScreen()),
-                    );
-                  },
-                  child: _buildNavItem(Icons.music_note, 'Music'),
-                  // return const MaterialApp(
-                  //   home: Scaffold(
-                  //     body: Center(
-                  //       child: MusicPlayerView(),
-                  //     ),
-                ),
-
-                _buildNavItem(Icons.favorite_border, 'Favorite'),
-                _buildNavItem(Icons.playlist_play, 'Playlist'),
-              ],
+            // Bottom navigation
+            Container(
+              height: 60,
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: Colors.transparent,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SongsScreen()),
+                      );
+                    },
+                    child: _buildNavItem(Icons.music_note, 'Music'),
+                  ),
+                  _buildNavItem(Icons.favorite_border, 'Favorite'),
+                  _buildNavItem(Icons.playlist_play, 'Playlist'),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -277,7 +277,6 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
   }
 }
 
-// Custom painter for music notes animation
 class MusicNotesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

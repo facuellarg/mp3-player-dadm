@@ -22,61 +22,69 @@ class _SongsScreenState extends State<SongsScreen> {
   }
 
   Future<void> _loadFilesRecursively() async {
-  setState(() {
-    isLoading = true;
-  });
-
-  if (await Permission.storage.request().isGranted) {
-    final directory = Directory('/storage/emulated/0/Music');
-    if (directory.existsSync()) {
-      try {
-        final List<FileSystemEntity> files = [];
-        await for (var file in directory.list(recursive: true, followLinks: false)) {
-          try {
-            if (file is File) {
-              files.add(file);
+    setState(() {
+      isLoading = true;
+    });
+    await Permission.storage.request();
+    await Permission.manageExternalStorage.request();
+    if (await Permission.manageExternalStorage.request().isGranted) {
+      final directory = Directory('/storage/emulated/0/Music');
+      if (directory.existsSync()) {
+        try {
+          final List<FileSystemEntity> files = [];
+          await for (var file
+              in directory.list(recursive: true, followLinks: false)) {
+            try {
+              if (file is File && file.path.endsWith('.mp3') ||
+                  file.path.endsWith('.wav')) {
+                files.add(file);
+              }
+            } catch (e) {
+              // Ignora carpetas inaccesibles
+              print("Error al acceder a ${file.path}: $e");
             }
-          } catch (e) {
-            // Ignora carpetas inaccesibles
-            print("Error al acceder a ${file.path}: $e");
           }
+          setState(() {
+            allFiles = files;
+          });
+        } catch (e) {
+          print("Error al listar archivos: $e");
         }
-        setState(() {
-          allFiles = files;
-        });
-      } catch (e) {
-        print("Error al listar archivos: $e");
+      } else {
+        print("Directorio no encontrado");
       }
     } else {
-      print("Directorio no encontrado");
+      print("Permisos de almacenamiento denegados.");
     }
-  } else {
-    print("Permisos de almacenamiento denegados.");
+    print("Archivos encontrados: ${allFiles.length}");
+    print(allFiles);
+
+    setState(() {
+      isLoading = false;
+    });
   }
 
-  setState(() {
-    isLoading = false;
-  });
-}
-
-  
   void _playFile(FileSystemEntity file) {
     // print("file-------------");
     // print(file.path.split('/').last);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Reproduciendo: ${file.path.split('/').last}')),
     );
-     Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MusicPlayerView(file, fileName: file,),
+        builder: (context) => MusicPlayerView(
+          file,
+          fileName: file.resolveSymbolicLinksSync(),
+        ),
       ),
-    );   
+    );
   }
 
   void _addToFavorites(FileSystemEntity file) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${file.path.split('/').last} añadido a favoritos')),
+      SnackBar(
+          content: Text('${file.path.split('/').last} añadido a favoritos')),
     );
   }
 
@@ -111,7 +119,8 @@ class _SongsScreenState extends State<SongsScreen> {
                   itemBuilder: (context, index) {
                     final file = allFiles[index];
                     return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 16),
                       child: ListTile(
                         leading: const Icon(Icons.insert_drive_file),
                         title: Text(file.path.split('/').last),
@@ -157,7 +166,8 @@ class _SongsScreenState extends State<SongsScreen> {
           switch (index) {
             case 0:
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Mi lista de música seleccionada')),
+                const SnackBar(
+                    content: Text('Mi lista de música seleccionada')),
               );
               break;
             case 1:

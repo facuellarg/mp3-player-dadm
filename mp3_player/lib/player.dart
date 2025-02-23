@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:mp3_player/favorites.dart';
+import 'package:mp3_player/audio_player_manager.dart';
 import 'package:mp3_player/nav_bar.dart';
 import 'package:mp3_player/visualization.dart';
 
@@ -22,6 +22,7 @@ class MusicPlayerView extends StatefulWidget {
 
 class _MusicPlayerViewState extends State<MusicPlayerView> {
   late AudioPlayer _audioPlayer;
+  final AudioPlayerManager _playerManager = AudioPlayerManager.instance;
   bool _isPlaying = false;
   late int _currentIndex;
 
@@ -29,7 +30,7 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
   void initState() {
     super.initState();
     _currentIndex = widget.currentSong;
-    _audioPlayer = AudioPlayer();
+    _audioPlayer = _playerManager.player;
     _initAudioPlayer();
   }
 
@@ -80,17 +81,10 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
 
   Future<void> _loadAndPlaySong() async {
     try {
-      await _audioPlayer.dispose();
-      // Create a new instance of AudioPlayer
-      setState(() {
-        _audioPlayer = AudioPlayer();
-      });
+      await _playerManager.stopAndDispose();
+      _audioPlayer = _playerManager.player;
 
-      await _audioPlayer.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(widget.fileNames[_currentIndex]),
-        ),
-      );
+      await _playerManager.setNewSource(widget.fileNames[_currentIndex]);
 
       // Reattach the player state listener
       _audioPlayer.playerStateStream.listen((playerState) {
@@ -290,7 +284,7 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
+    _playerManager.stopAndDispose();
     super.dispose();
   }
 }

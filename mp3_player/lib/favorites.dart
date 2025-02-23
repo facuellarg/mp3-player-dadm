@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mp3_player/nav_bar.dart';
 
 class FavoritesPage extends StatelessWidget {
   List<Map<String, String>> favoriteSongs;
@@ -25,6 +26,7 @@ class FavoritesPage extends StatelessWidget {
                 );
               },
             ),
+      bottomNavigationBar: MyNavigationBar(context),
     );
   }
 }

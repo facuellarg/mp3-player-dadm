@@ -1,32 +1,59 @@
 import 'package:flutter/material.dart';
-import 'package:mp3_player/nav_bar.dart';
+import 'favorites_manager.dart';
+import 'player.dart';
 
-class FavoritesPage extends StatelessWidget {
-  List<Map<String, String>> favoriteSongs;
+class FavoriteSongsScreen extends StatefulWidget {
+  @override
+  _FavoriteSongsScreenState createState() => _FavoriteSongsScreenState();
+}
 
-  FavoritesPage({required this.favoriteSongs});
+class _FavoriteSongsScreenState extends State<FavoriteSongsScreen> {
+  List<String> _favoriteSongs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final favorites = await FavoritesManager.getFavorites();
+    setState(() {
+      _favoriteSongs = favorites;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Favorites'),
-      ),
-      body: favoriteSongs.isEmpty
-          ? Center(child: Text('No favorites yet!'))
-          : ListView.builder(
-              itemCount: favoriteSongs.length,
-              itemBuilder: (context, index) {
-                final song = favoriteSongs[index];
-                return ListTile(
-                  leading: Icon(Icons.music_note, color: Colors.orange),
-                  title: Text(song['title']!),
-                  subtitle: Text(song['artist']!),
-                  trailing: Icon(Icons.favorite, color: Colors.red),
-                );
+      appBar: AppBar(title: const Text("Canciones Favoritas")),
+      body: ListView.builder(
+        itemCount: _favoriteSongs.length,
+        itemBuilder: (context, index) {
+          final song = _favoriteSongs[index];
+          return ListTile(
+            title: Text(song.split('/').last),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                await FavoritesManager.removeFavorite(song);
+                _loadFavorites();
               },
             ),
-      bottomNavigationBar: MyNavigationBar(context),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MusicPlayerView(
+                    fileNames: _favoriteSongs,
+                    currentSong: index,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

@@ -2,19 +2,24 @@ import 'dart:io';
 import 'package:mp3_player/audio_player_manager.dart';
 import 'package:mp3_player/nav_bar.dart';
 import 'package:mp3_player/visualization.dart';
-
 import 'songs.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
+import 'favorites_manager.dart';
+import 'dart:async';
 
 class MusicPlayerView extends StatefulWidget {
   final List<String> fileNames;
   final int currentSong;
+  final Function(String)? onFavoriteChanged;
 
-  const MusicPlayerView(FileSystemEntity file,
-      {Key? key, required this.fileNames, required this.currentSong})
-      : super(key: key);
+  const MusicPlayerView({
+    Key? key,
+    required this.fileNames,
+    required this.currentSong,
+    this.onFavoriteChanged,
+  }) : super(key: key);
 
   @override
   State<MusicPlayerView> createState() => _MusicPlayerViewState();
@@ -25,6 +30,8 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
   final AudioPlayerManager _playerManager = AudioPlayerManager.instance;
   bool _isPlaying = false;
   late int _currentIndex;
+  bool _isFavorite = false;
+  late StreamSubscription<PlayerState> _playerStateSubscription;
 
   @override
   void initState() {
@@ -33,80 +40,105 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
     _audioPlayer = _playerManager.player;
     _initAudioPlayer();
   }
-
+Widget _buildControlButton({required IconData icon, required VoidCallback? onPressed, double size = 48}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+    child: InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.teal,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 4,
+              offset: Offset(2, 2),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(12),
+        child: Icon(
+          icon,
+          size: size,
+          color: Colors.white,
+        ),
+      ),
+    ),
+  );
+}
   Future<void> _initAudioPlayer() async {
     try {
       await _audioPlayer.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(widget.fileNames[_currentIndex]),
-        ),
+        AudioSource.uri(Uri.parse(widget.fileNames[_currentIndex])),
       );
-
-      _audioPlayer.playerStateStream.listen((playerState) {
-        if (playerState.playing != _isPlaying) {
-          setState(() {
-            _isPlaying = playerState.playing;
-          });
-        }
+      _playerStateSubscription = _audioPlayer.playerStateStream.listen((playerState) {
+        setState(() {
+          _isPlaying = playerState.playing;
+        });
       });
-
-      // Add listener for when song completes
-      _audioPlayer.positionStream.listen((position) {
-        if (position >= (_audioPlayer.duration ?? Duration.zero)) {
-          _playNextSong();
-        }
-      });
+      _isFavorite = await FavoritesManager.isFavorite(widget.fileNames[_currentIndex]);
+      setState(() {});
     } catch (e) {
       debugPrint("Error loading audio: $e");
     }
   }
 
-  Future<void> _playNextSong() async {
-    if (_currentIndex < widget.fileNames.length - 1) {
-      setState(() {
-        _currentIndex++;
-      });
-      await _loadAndPlaySong();
-    }
-  }
-
-  Future<void> _playPreviousSong() async {
-    if (_currentIndex > 0) {
-      setState(() {
-        _currentIndex--;
-      });
-      await _loadAndPlaySong();
-    }
-  }
-
-  Future<void> _loadAndPlaySong() async {
-    try {
-      await _playerManager.stopAndDispose();
-      _audioPlayer = _playerManager.player;
-
-      await _playerManager.setNewSource(widget.fileNames[_currentIndex]);
-
-      // Reattach the player state listener
-      _audioPlayer.playerStateStream.listen((playerState) {
-        if (playerState.playing != _isPlaying) {
-          setState(() {
-            _isPlaying = playerState.playing;
-          });
-        }
-      });
-
+  Future<void> _togglePlayPause() async {
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+    } else {
       await _audioPlayer.play();
-    } catch (e) {
-      debugPrint("Error changing song: $e");
     }
   }
 
-  Stream<Duration> get _positionStream =>
-      Rx.combineLatest2<Duration, Duration?, Duration>(
-        _audioPlayer.positionStream,
-        _audioPlayer.durationStream,
-        (position, duration) => position,
-      );
+  Future<void> _toggleFavorite() async {
+    final songPath = widget.fileNames[_currentIndex];
+    bool favoriteChanged = false;
+
+    if (_isFavorite) {
+      await FavoritesManager.removeFavorite(songPath);
+      favoriteChanged = true;
+    } else {
+      await FavoritesManager.addFavorite(songPath);
+      favoriteChanged = true;
+    }
+
+    // Si se proporciona onFavoriteChanged, llamamos a la función
+    if (widget.onFavoriteChanged != null) {
+      widget.onFavoriteChanged!(songPath);
+    }
+
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+
+    // Devolver si hubo un cambio en el estado del favorito
+    Navigator.pop(context, favoriteChanged);
+  }
+
+  Future<void> _changeSong(int newIndex) async {
+    if (newIndex < 0 || newIndex >= widget.fileNames.length) {
+      return;
+    }
+
+    setState(() {
+      _currentIndex = newIndex;
+    });
+
+    // Cargar la nueva canción
+    await _audioPlayer.setAudioSource(
+      AudioSource.uri(Uri.parse(widget.fileNames[_currentIndex])),
+    );
+  }
+
+  @override
+  void dispose() {
+    _playerStateSubscription.cancel();
+    _audioPlayer.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +157,13 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
             style: TextStyle(color: Colors.black),
           ),
           actions: [
+            IconButton(
+              icon: Icon(
+                _isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: _isFavorite ? Colors.red : Colors.black,
+              ),
+              onPressed: _toggleFavorite,
+            ),
             IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black),
               onPressed: () => Navigator.pop(context),
@@ -156,90 +195,28 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    StreamBuilder<IcyMetadata?>(
-                      stream: _audioPlayer.icyMetadataStream,
-                      builder: (context, snapshot) {
-                        final artist = snapshot.data?.info?.title
-                                ?.split(' - ')
-                                .lastOrNull ??
-                            '';
-                        return artist.isNotEmpty
-                            ? Text(
-                                artist,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              )
-                            : const SizedBox.shrink();
-                      },
-                    ),
-                    StreamBuilder<Duration>(
-                      stream: _positionStream,
-                      builder: (context, snapshot) {
-                        final position = snapshot.data ?? Duration.zero;
-                        final duration = _audioPlayer.duration ?? Duration.zero;
-
-                        return Column(
-                          children: [
-                            Slider(
-                              value: position.inMilliseconds.toDouble(),
-                              max: duration.inMilliseconds.toDouble(),
-                              onChanged: (value) {
-                                _audioPlayer.seek(
-                                    Duration(milliseconds: value.toInt()));
-                              },
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(_formatDuration(position)),
-                                  Text(_formatDuration(duration)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildControlButton(
-                          Icons.skip_previous,
-                          Colors.teal,
-                          onPressed:
-                              _currentIndex > 0 ? _playPreviousSong : null,
-                        ),
-                        const SizedBox(width: 20),
-                        _buildControlButton(
-                          _isPlaying ? Icons.pause : Icons.play_arrow,
-                          Colors.teal,
-                          isLarge: true,
-                          onPressed: () {
-                            if (_isPlaying) {
-                              _audioPlayer.pause();
-                            } else {
-                              _audioPlayer.play();
-                            }
-                          },
-                        ),
-                        const SizedBox(width: 20),
-                        _buildControlButton(
-                          Icons.skip_next,
-                          Colors.teal,
-                          onPressed: _currentIndex < widget.fileNames.length - 1
-                              ? _playNextSong
-                              : null,
-                        ),
-                      ],
-                    ),
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    _buildControlButton(
+      icon: Icons.skip_previous,
+      onPressed: _currentIndex > 0
+          ? () => _changeSong(_currentIndex - 1)
+          : null,
+    ),
+    _buildControlButton(
+      icon: _isPlaying ? Icons.pause : Icons.play_arrow,
+      onPressed: _togglePlayPause,
+      size: 64, // Botón central más grande
+    ),
+    _buildControlButton(
+      icon: Icons.skip_next,
+      onPressed: _currentIndex < widget.fileNames.length - 1
+          ? () => _changeSong(_currentIndex + 1)
+          : null,
+    ),
+  ],
+),
                   ],
                 ),
               ),
@@ -249,42 +226,5 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
         bottomNavigationBar: MyNavigationBar(context),
       ),
     );
-  }
-
-  Widget _buildControlButton(
-    IconData icon,
-    Color color, {
-    bool isLarge = false,
-    VoidCallback? onPressed,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: isLarge ? 64 : 48,
-        height: isLarge ? 64 : 48,
-        decoration: BoxDecoration(
-          color: onPressed == null ? Colors.grey : color,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: isLarge ? 32 : 24,
-        ),
-      ),
-    );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$minutes:$seconds";
-  }
-
-  @override
-  void dispose() {
-    _playerManager.stopAndDispose();
-    super.dispose();
   }
 }

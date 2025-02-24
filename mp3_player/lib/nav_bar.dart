@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mp3_player/favorites.dart';
 import 'package:mp3_player/songs.dart';
+import 'package:mp3_player/favorites_screen.dart';
 
 Container NavBar(BuildContext context) {
   return Container(
@@ -31,9 +31,7 @@ Container NavBar(BuildContext context) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => FavoritesPage(
-                        favoriteSongs: [],
-                      )),
+                  builder: (context) =>  FavoriteSongsScreen()),
             );
           },
           child: _buildNavItem(Icons.favorite_border, 'Favorite'),
@@ -85,9 +83,7 @@ BottomNavigationBar MyNavigationBar(BuildContext context) {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => FavoritesPage(
-                      favoriteSongs: [],
-                    )),
+                builder: (context) =>  FavoriteSongsScreen()),
           );
           break;
       }

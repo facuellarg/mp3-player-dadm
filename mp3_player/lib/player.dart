@@ -195,22 +195,25 @@ Future<void> _changeSong(int newIndex) async {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Row(
+                   Row(
   mainAxisAlignment: MainAxisAlignment.center,
   children: [
-    IconButton(
-      icon: const Icon(Icons.skip_previous, size: 36),
+    _buildControlButton(
+      icon: Icons.skip_previous,
       onPressed: _currentIndex > 0 ? () => _changeSong(_currentIndex - 1) : null,
+      size: 36,
     ),
-    IconButton(
-      icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, size: 48),
+    _buildControlButton(
+      icon: _isPlaying ? Icons.pause : Icons.play_arrow,
       onPressed: _togglePlayPause,
+      size: 48,
     ),
-    IconButton(
-      icon: const Icon(Icons.skip_next, size: 36),
+    _buildControlButton(
+      icon: Icons.skip_next,
       onPressed: _currentIndex < widget.fileNames.length - 1
           ? () => _changeSong(_currentIndex + 1)
           : null,
+      size: 36,
     ),
   ],
 )

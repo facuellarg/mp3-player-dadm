@@ -3,6 +3,7 @@ import 'songs.dart';
 import "player.dart";
 import 'package:mp3_player/favorites_screen.dart';
 import 'package:mp3_player/favorites_manager.dart';
+import './ai.dart';
 
 void main() {
   runApp(const MainApp());
@@ -78,21 +79,30 @@ class HomeScreen extends StatelessWidget {
             },
             child: const Text('Ver la lista de todas las canciones'),
           ),
-            ElevatedButton(
+          ElevatedButton(
             onPressed: () {
               _showThemeDialog(context);
             },
             child: const Text('Configuración'),
           ),
           ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => FavoriteSongsScreen()),
-    );
-  },
-  child: const Text('Ver canciones favoritas'),
-),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FavoriteSongsScreen()),
+              );
+            },
+            child: const Text('Ver canciones favoritas'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SongDetailsScreen()),
+              );
+            },
+            child: const Text('Artificial Intelligence'),
+          ),
         ] 
       ),
       

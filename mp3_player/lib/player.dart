@@ -144,17 +144,14 @@ Future<void> _changeSong(int newIndex) async {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.white,
         appBar: AppBar(
-          backgroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black),
+            icon: const Icon(Icons.menu),
             onPressed: () {},
           ),
           title: const Text(
             'Listening',
-            style: TextStyle(color: Colors.black),
           ),
           actions: [
             IconButton(
@@ -165,7 +162,7 @@ Future<void> _changeSong(int newIndex) async {
               onPressed: _toggleFavorite,
             ),
             IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -196,28 +193,28 @@ Future<void> _changeSong(int newIndex) async {
                       overflow: TextOverflow.ellipsis,
                     ),
                    Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    _buildControlButton(
-      icon: Icons.skip_previous,
-      onPressed: _currentIndex > 0 ? () => _changeSong(_currentIndex - 1) : null,
-      size: 36,
-    ),
-    _buildControlButton(
-      icon: _isPlaying ? Icons.pause : Icons.play_arrow,
-      onPressed: _togglePlayPause,
-      size: 48,
-    ),
-    _buildControlButton(
-      icon: Icons.skip_next,
-      onPressed: _currentIndex < widget.fileNames.length - 1
-          ? () => _changeSong(_currentIndex + 1)
-          : null,
-      size: 36,
-    ),
-  ],
-)
-,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildControlButton(
+                        icon: Icons.skip_previous,
+                        onPressed: _currentIndex > 0 ? () => _changeSong(_currentIndex - 1) : null,
+                        size: 36,
+                      ),
+                      _buildControlButton(
+                        icon: _isPlaying ? Icons.pause : Icons.play_arrow,
+                        onPressed: _togglePlayPause,
+                        size: 48,
+                      ),
+                      _buildControlButton(
+                        icon: Icons.skip_next,
+                        onPressed: _currentIndex < widget.fileNames.length - 1
+                            ? () => _changeSong(_currentIndex + 1)
+                            : null,
+                        size: 36,
+                      ),
+                    ],
+                  )
+                  ,
                   ],
                 ),
               ),

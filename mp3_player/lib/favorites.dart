@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'favorites_manager.dart';
 import 'player.dart';
 
-class FavoriteSongsScreen extends StatefulWidget {
+class FavoritesView extends StatefulWidget {
+  const FavoritesView({Key? key}) : super(key: key);
+
   @override
-  _FavoriteSongsScreenState createState() => _FavoriteSongsScreenState();
+  State<FavoritesView> createState() => _FavoritesViewState();
 }
 
-class _FavoriteSongsScreenState extends State<FavoriteSongsScreen> {
-  List<String> _favoriteSongs = [];
+class _FavoritesViewState extends State<FavoritesView> {
+  List<String> favoriteSongs = [];
 
   @override
   void initState() {
@@ -17,43 +19,54 @@ class _FavoriteSongsScreenState extends State<FavoriteSongsScreen> {
   }
 
   Future<void> _loadFavorites() async {
-    final favorites = await FavoritesManager.getFavorites();
+    final songs = await FavoritesManager.getFavorites();
     setState(() {
-      _favoriteSongs = favorites;
+      favoriteSongs = songs;
     });
+  }
+
+  void _removeFavorite(String songPath) async {
+    await FavoritesManager.removeFavorite(songPath);
+    _loadFavorites(); // Refresca la lista
+  }
+
+  void _playFromFavorites(int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MusicPlayerView(
+          fileNames: favoriteSongs,
+          currentSong: index,
+          onFavoriteChanged: (String path) {
+            _loadFavorites(); // Refresca la lista si cambia el estado
+          },
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Canciones Favoritas")),
-      body: ListView.builder(
-        itemCount: _favoriteSongs.length,
-        itemBuilder: (context, index) {
-          final song = _favoriteSongs[index];
-          return ListTile(
-            title: Text(song.split('/').last),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () async {
-                await FavoritesManager.removeFavorite(song);
-                _loadFavorites();
+      appBar: AppBar(title: const Text('Favoritos')),
+      body: favoriteSongs.isEmpty
+          ? const Center(child: Text('No hay canciones favoritas'))
+          : ListView.builder(
+              itemCount: favoriteSongs.length,
+              itemBuilder: (context, index) {
+                final songPath = favoriteSongs[index];
+                final songName = songPath.split('/').last;
+
+                return ListTile(
+                  title: Text(songName, overflow: TextOverflow.ellipsis),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeFavorite(songPath),
+                  ),
+                  onTap: () => _playFromFavorites(index), // Reproduce la canción seleccionada
+                );
               },
             ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MusicPlayerView(
-                    fileNames: _favoriteSongs,
-                    currentSong: index,
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
     );
   }
 }

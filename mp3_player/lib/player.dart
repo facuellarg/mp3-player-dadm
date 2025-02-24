@@ -118,20 +118,20 @@ Widget _buildControlButton({required IconData icon, required VoidCallback? onPre
     Navigator.pop(context, favoriteChanged);
   }
 
-  Future<void> _changeSong(int newIndex) async {
-    if (newIndex < 0 || newIndex >= widget.fileNames.length) {
-      return;
-    }
+Future<void> _changeSong(int newIndex) async {
+  if (newIndex < 0 || newIndex >= widget.fileNames.length) return;
 
-    setState(() {
-      _currentIndex = newIndex;
-    });
+  setState(() {
+    _currentIndex = newIndex;
+  });
 
-    // Cargar la nueva canción
-    await _audioPlayer.setAudioSource(
-      AudioSource.uri(Uri.parse(widget.fileNames[_currentIndex])),
-    );
-  }
+  await _audioPlayer.setAudioSource(
+    AudioSource.uri(Uri.parse(widget.fileNames[_currentIndex])),
+  );
+
+  _isFavorite = await FavoritesManager.isFavorite(widget.fileNames[_currentIndex]);
+  setState(() {});
+}
 
   @override
   void dispose() {
@@ -198,25 +198,23 @@ Widget _buildControlButton({required IconData icon, required VoidCallback? onPre
                     Row(
   mainAxisAlignment: MainAxisAlignment.center,
   children: [
-    _buildControlButton(
-      icon: Icons.skip_previous,
-      onPressed: _currentIndex > 0
-          ? () => _changeSong(_currentIndex - 1)
-          : null,
+    IconButton(
+      icon: const Icon(Icons.skip_previous, size: 36),
+      onPressed: _currentIndex > 0 ? () => _changeSong(_currentIndex - 1) : null,
     ),
-    _buildControlButton(
-      icon: _isPlaying ? Icons.pause : Icons.play_arrow,
+    IconButton(
+      icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, size: 48),
       onPressed: _togglePlayPause,
-      size: 64, // Botón central más grande
     ),
-    _buildControlButton(
-      icon: Icons.skip_next,
+    IconButton(
+      icon: const Icon(Icons.skip_next, size: 36),
       onPressed: _currentIndex < widget.fileNames.length - 1
           ? () => _changeSong(_currentIndex + 1)
           : null,
     ),
   ],
-),
+)
+,
                   ],
                 ),
               ),

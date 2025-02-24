@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'songs.dart';
 import "player.dart";
+import 'package:mp3_player/favorites_screen.dart';
+import 'package:mp3_player/favorites_manager.dart';
 
 void main() {
   runApp(const MainApp());
@@ -82,6 +84,15 @@ class HomeScreen extends StatelessWidget {
             },
             child: const Text('Configuración'),
           ),
+          ElevatedButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FavoriteSongsScreen()),
+    );
+  },
+  child: const Text('Ver canciones favoritas'),
+),
         ] 
       ),
       

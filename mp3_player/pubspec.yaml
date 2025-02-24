@@ -9,8 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  shared_preferences: ^2.2.0
   path_provider: ^2.0.15
-  permission_handler: ^10.2.0
+  permission_handler: ^11.0.1
   just_audio: ^0.9.42
   rxdart: ^0.28.0
 
